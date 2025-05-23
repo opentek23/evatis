@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Recharge</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2Nhbm5lciBSZWNoYXJnZSIsInNob3J0X25hbWUiOiJTY2FubmVyIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjNjc0ZWZmIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwZjBmMjMiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCM2FXUjBhRDBpTWpReUlpQm9aV2xuYUhROUlqSTBNaUlnZG1sbGQwSnZlRDBpTUNBd0lESTBNaUF5TkRJaUlIaHRiRzV6UFNKb2RIUndPaTh2ZDNkM0xuY3pMbTl5Wnk4eU1EQXdMM04yWnlJK1BISmxZM1FnZEhKaGJuTm1iM0p0UFNKMGNtRnVjMnhoZEdVb01USXhJREV5TVNraUlHWnBiR3c5SWlNMk56UmxabVlpSUhkcFpIUm9QU0l4TURBaUlHaGxhV2RvZEQwaU1UQXdJaTgrUEM5eVpXTjBQand2YzNablBnPT0iLCJzaXplcyI6IjI0MngyNDIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #333333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(103, 78, 255, 0.05);
+            border-bottom: 1px solid rgba(103, 78, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #674eff, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .main {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .camera-container {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            aspect-ratio: 4/3;
+            max-height: 60vh;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        video, canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 30%;
+            border: 2px dashed #674eff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(103, 78, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay-text {
+            background: rgba(103, 78, 255, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #674eff, #f093fb);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 2px solid #dee2e6;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(103, 78, 255, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #674eff;
+        }
+
+        .detected-code {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            border: 2px solid #674eff;
+            color: #333;
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .status.processing {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .status.success {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .status.error {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .manual-input {
+            margin-top: 20px;
+        }
+
+        .manual-input input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .manual-input input::placeholder {
+            color: #6c757d;
+        }
+
+        .manual-input input:focus {
+            outline: none;
+            border-color: #674eff;
+            box-shadow: 0 0 0 3px rgba(103, 78, 255, 0.1);
+        }
+
+        @media (max-width: 480px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                min-width: 100%;
+            }
+            
+            .evatis-card {
+                max-width: 300px;
+                margin: 0 auto 20px;
+            }
+        }
+
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            margin-top: auto;
+        }
+
+        .footer p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #674eff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .evatis-card {
+            max-width: 350px;
+            margin: 0 auto 30px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            transform: perspective(1000px) rotateX(2deg);
+            transition: transform 0.3s ease;
+        }
+
+        .evatis-card:hover {
+            transform: perspective(1000px) rotateX(0deg) scale(1.02);
+        }
+
+        .card-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app">
+            <header class="header">
+                <h1>Scanner Recharge</h1>
+                <p>Scannez et recharger votre carte credit automatiquement</p>
+            </header>
+
+            <main class="main">
+                <!-- Carte Evatis -->
+                <div class="evatis-card">
+                    <img 
+                        src="evatis.jpg" 
+                        alt="Carte Prépayée Evatis 2000 FDJ"
+                        class="card-image"
+                    >
+                </div>
+
+                <!-- Caméra -->
+                <div class="camera-container" v-show="cameraActive && !showManualInput">
+                    <video 
+                        ref="video" 
+                        v-show="cameraActive && !capturedImage" 
+                        autoplay 
+                        playsinline 
+                        webkit-playsinline 
+                        muted
+                    ></video>
+                    <canvas ref="canvas" v-show="capturedImage" @click="retakePhoto"></canvas>
+                    
+                    <div class="overlay" v-show="cameraActive && !capturedImage">
+                        <div class="overlay-text">
+                            Placez la carte ici<br>
+                            <small>Alignez les chiffres dans cette zone</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contrôles -->
+                <div class="controls">
+                    <button v-if="!cameraActive" @click="startCamera" class="btn btn-primary">
+                        📷 Démarrer Caméra
+                    </button>
+                    
+                    <button v-if="cameraActive && !capturedImage" @click="capturePhoto" class="btn btn-primary">
+                        📸 Capturer
+                    </button>
+                    
+                    <button v-if="capturedImage" @click="processImage" :disabled="processing" class="btn btn-primary">
+                        <span v-if="processing">⏳ Traitement...</span>
+                        <span v-else>🔍 Scanner Code</span>
+                    </button>
+                    
+                    <button v-if="capturedImage" @click="retakePhoto" class="btn btn-secondary">
+                        🔄 Reprendre
+                    </button>
+                    
+                    <button @click="toggleManualInput" class="btn btn-secondary">
+                        ✏️ Saisie Manuelle
+                    </button>
+                </div>
+
+                <!-- Saisie manuelle -->
+                <transition name="fade">
+                    <div v-if="showManualInput" class="manual-input">
+                        <input 
+                            v-model="manualCode" 
+                            placeholder="Entrez le code à 12 chiffres"
+                            maxlength="12"
+                            @input="validateManualInput"
+                            type="tel"
+                        >
+                        <button @click="useManualCode" :disabled="manualCode.length !== 12" class="btn btn-primary">
+                            ✅ Utiliser ce Code
+                        </button>
+                    </div>
+                </transition>
+
+                <!-- Statut -->
+                <transition name="fade">
+                    <div v-if="status" :class="`status ${status.type}`">
+                        {{ status.message }}
+                    </div>
+                </transition>
+
+                <!-- Résultat -->
+                <transition name="fade">
+                    <div v-if="detectedCode" class="result-card">
+                        <div class="result-title">Code Détecté</div>
+                        <div class="detected-code">[{{ detectedCode }}]</div>
+                        <div class="controls">
+                            <button @click="makeRechargeCall" class="btn btn-primary">
+                                📞 Recharger (*166*)
+                            </button>
+                            <button @click="copyCode" class="btn btn-secondary">
+                                📋 Copier
+                            </button>
+                        </div>
+                    </div>
+                </transition>
+            </main>
+
+            <footer class="footer">
+                <p>Création d'<a href="https://opentek.co/" target="_blank" rel="noopener noreferrer">Opentek</a></p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const video = ref(null);
+                const canvas = ref(null);
+                const cameraActive = ref(false);
+                const capturedImage = ref(false);
+                const processing = ref(false);
+                const detectedCode = ref('');
+                const status = ref(null);
+                const showManualInput = ref(false);
+                const manualCode = ref('');
+
+                // Gestion PWA
+                onMounted(() => {
+                    // Enregistrement du Service Worker pour PWA
+                    if ('serviceWorker' in navigator) {
+                        const swCode = `
+                            const CACHE_NAME = 'recharge-scanner-v1';
+                            const urlsToCache = ['/'];
+                            
+                            self.addEventListener('install', event => {
+                                event.waitUntil(
+                                    caches.open(CACHE_NAME)
+                                        .then(cache => cache.addAll(urlsToCache))
+                                );
+                            });
+                            
+                            self.addEventListener('fetch', event => {
+                                event.respondWith(
+                                    caches.match(event.request)
+                                        .then(response => response || fetch(event.request))
+                                );
+                            });
+                        `;
+                        
+                        const blob = new Blob([swCode], { type: 'application/javascript' });
+                        const swUrl = URL.createObjectURL(blob);
+                        
+                        navigator.serviceWorker.register(swUrl);
+                    }
+                });
+
+                const setStatus = (message, type = 'processing') => {
+                    status.value = { message, type };
+                    setTimeout(() => status.value = null, 3000);
+                };
+
+                const startCamera = async () => {
+                    try {
+                        // Configuration optimisée pour mobile Chrome/Safari
+                        const constraints = {
+                            video: {
+                                facingMode: { exact: 'environment' }, // Force caméra arrière
+                                width: { ideal: 1920, min: 640 },
+                                height: { ideal: 1080, min: 480 },
+                                frameRate: { ideal: 30, min: 15 }
+                            },
+                            audio: false
+                        };
+
+                        let stream;
+                        
+                        try {
+                            // Essai avec caméra arrière forcée
+                            stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        } catch (error) {
+                            // Fallback si caméra arrière indisponible
+                            console.log('Caméra arrière indisponible, utilisation de la caméra par défaut');
+                            const fallbackConstraints = {
+                                video: {
+                                    facingMode: 'environment', // Sans exact
+                                    width: { ideal: 1280, min: 640 },
+                                    height: { ideal: 720, min: 480 }
+                                },
+                                audio: false
+                            };
+                            stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                        }
+                        
+                        // Configuration vidéo pour mobile
+                        const videoElement = video.value;
+                        videoElement.srcObject = stream;
+                        videoElement.setAttribute('playsinline', true); // Important pour iOS
+                        videoElement.setAttribute('webkit-playsinline', true); // iOS Safari
+                        videoElement.muted = true; // Évite les problèmes d'autoplay
+                        
+                        // Force le démarrage sur mobile
+                        await videoElement.play();
+                        
+                        cameraActive.value = true;
+                        setStatus('Caméra activée', 'success');
+                        
+                    } catch (error) {
+                        console.error('Erreur caméra:', error);
+                        let errorMessage = 'Erreur d\'accès à la caméra';
+                        
+                        if (error.name === 'NotAllowedError') {
+                            errorMessage = 'Veuillez autoriser l\'accès à la caméra';
+                        } else if (error.name === 'NotFoundError') {
+                            errorMessage = 'Aucune caméra trouvée sur cet appareil';
+                        } else if (error.name === 'NotSupportedError') {
+                            errorMessage = 'Caméra non supportée par ce navigateur';
+                        }
+                        
+                        setStatus(errorMessage, 'error');
+                    }
+                };
+
+                const capturePhoto = () => {
+                    const context = canvas.value.getContext('2d');
+                    const videoElement = video.value;
+                    
+                    // Définir la taille du canvas en fonction de la vidéo
+                    canvas.value.width = videoElement.videoWidth || 1280;
+                    canvas.value.height = videoElement.videoHeight || 720;
+                    
+                    // Dessiner l'image avec une meilleure qualité
+                    context.imageSmoothingEnabled = true;
+                    context.imageSmoothingQuality = 'high';
+                    context.drawImage(videoElement, 0, 0, canvas.value.width, canvas.value.height);
+                    
+                    capturedImage.value = true;
+                    setStatus('Photo capturée avec succès', 'success');
+                    
+                    // Arrêter le flux vidéo pour économiser la batterie
+                    const stream = videoElement.srcObject;
+                    if (stream) {
+                        const tracks = stream.getTracks();
+                        tracks.forEach(track => track.stop());
+                    }
+                    
+                    // Vibration tactile si supportée (mobile)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                };
+
+                const retakePhoto = () => {
+                    capturedImage.value = false;
+                    detectedCode.value = '';
+                    startCamera();
+                };
+
+                const processImage = async () => {
+                    processing.value = true;
+                    setStatus('Analyse de l\'image en cours...', 'processing');
+
+                    try {
+                        // Configuration OCR optimisée pour cartes de recharge
+                        const { data: { text } } = await Tesseract.recognize(
+                            canvas.value,
+                            'eng',
+                            {
+                                logger: m => {
+                                    if (m.status === 'recognizing text') {
+                                        setStatus(`Reconnaissance: ${Math.round(m.progress * 100)}%`, 'processing');
+                                    }
+                                },
+                                tessedit_char_whitelist: '0123456789',
+                                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                                preserve_interword_spaces: '0'
+                            }
+                        );
+
+                        // Extraction et nettoyage des chiffres
+                        const numbers = text.replace(/\D/g, '');
+                        console.log('Texte détecté:', text);
+                        console.log('Chiffres extraits:', numbers);
+                        
+                        if (numbers.length >= 12) {
+                            // Prendre les 12 premiers chiffres
+                            const code = numbers.substring(0, 12);
+                            detectedCode.value = code;
+                            setStatus('Code détecté avec succès!', 'success');
+                            
+                            // Vibration de succès
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100]);
+                            }
+                        } else if (numbers.length > 0) {
+                            setStatus(`${numbers.length} chiffres détectés (12 requis). Essayez la saisie manuelle.`, 'error');
+                        } else {
+                            setStatus('Aucun chiffre détecté. Vérifiez l\'éclairage et la netteté.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Erreur OCR:', error);
+                        setStatus('Erreur lors du scan. Utilisez la saisie manuelle.', 'error');
+                    }
+
+                    processing.value = false;
+                };
+
+                const toggleManualInput = () => {
+                    showManualInput.value = !showManualInput.value;
+                    if (showManualInput.value) {
+                        manualCode.value = '';
+                    }
+                };
+
+                const validateManualInput = () => {
+                    manualCode.value = manualCode.value.replace(/\D/g, '').substring(0, 12);
+                };
+
+                const useManualCode = () => {
+                    detectedCode.value = manualCode.value;
+                    showManualInput.value = false;
+                    setStatus('Code saisi manuellement', 'success');
+                };
+
+                const makeRechargeCall = () => {
+                    const phoneNumber = `*166*${detectedCode.value}#`;
+                    
+                    // Confirmation avant l'appel
+                    if (confirm(`Confirmer la recharge avec le code ${detectedCode.value} ?\n\nAppel: ${phoneNumber}`)) {
+                        try {
+                            // Ouverture de l'app téléphone
+                            window.location.href = `tel:${phoneNumber}`;
+                            setStatus('Ouverture de l\'application téléphone...', 'success');
+                            
+                            // Vibration de confirmation
+                            if (navigator.vibrate) {
+                                navigator.vibrate(200);
+                            }
+                        } catch (error) {
+                            setStatus('Impossible d\'ouvrir l\'app téléphone', 'error');
+                        }
+                    }
+                };
+
+                const copyCode = async () => {
+                    try {
+                        await navigator.clipboard.writeText(`[${detectedCode.value}]`);
+                        setStatus('Code copié dans le presse-papiers', 'success');
+                    } catch (error) {
+                        setStatus('Erreur lors de la copie', 'error');
+                    }
+                };
+
+                return {
+                    video,
+                    canvas,
+                    cameraActive,
+                    capturedImage,
+                    processing,
+                    detectedCode,
+                    status,
+                    showManualInput,
+                    manualCode,
+                    startCamera,
+                    capturePhoto,
+                    retakePhoto,
+                    processImage,
+                    toggleManualInput,
+                    validateManualInput,
+                    useManualCode,
+                    makeRechargeCall,
+                    copyCode
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
