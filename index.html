@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Evatis</title>
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#2196F3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Scanner Evatis">
+    <meta name="description" content="Scanner automatique de codes de recharge Evatis">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2Nhbm5lciBFdmF0aXMiLCJzaG9ydF9uYW1lIjoiU2Nhbm5lciIsInN0YXJ0X3VybCI6Ii4vIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJ0aGVtZV9jb2xvciI6IiMyMTk2RjMiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2Y1ZjVmNSIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDE5MiAxOTInJTNFJTNDcmVjdCB3aWR0aD0nMTkyJyBoZWlnaHQ9JzE5MicgZmlsbD0nJTIzMjE5NkYzJyByeD0nMjQnLyUzRSUzQ3RleHQgeD0nOTYnIHk9JzEyMCcgZm9udC1zaXplPSc2MCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nd2hpdGUnJTNFJUYwJTlGJTkzJUI3JTNDL3RleHQlM0UlM0MvdGV4dCUzRSUzQy9zdmclM0UiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9LHsic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA1MTIgNTEyJyUzRSUzQ3JlY3Qgd2lkdGg9JzUxMicgaGVpZ2h0PSc1MTInIGZpbGw9JyUyMzIxOTZGMycgcng9JzY0Jy8lM0UlM0N0ZXh0IHg9JzI1NicgeT0nMzIwJyBmb250LXNpemU9JzE4MCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nd2hpdGUnJTNFJUYwJTlGJTkzJUI3JTNDL3RleHQlM0UlM0MvdGV4dCUzRSUzQy9zdmclM0UiLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
+    
+    <!-- PWA iOS Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%232196F3' rx='24'/><text x='96' y='120' font-size='60' text-anchor='middle' fill='white'>📷</text></svg>">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; min-height: 100vh; padding: 15px;
+        }
+        
+        .app { 
+            max-width: 400px; margin: 0 auto; 
+            display: flex; flex-direction: column; min-height: calc(100vh - 30px);
+        }
+        
+        .header { 
+            text-align: center; margin-bottom: 20px; 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2196F3; font-size: 26px; margin-bottom: 8px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .header p { color: #666; font-size: 15px; }
+        
+        .install-prompt {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white; border-radius: 15px; padding: 15px; margin-bottom: 15px;
+            text-align: center; display: none; animation: slideIn 0.5s ease;
+        }
+        .install-prompt.show { display: block; }
+        .install-prompt button {
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            padding: 8px 16px; border-radius: 8px; margin: 5px;
+            font-weight: 600; cursor: pointer;
+        }
+        
+        .camera-card { 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 20px; margin-bottom: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1); flex-grow: 1;
+        }
+        
+        .example-section {
+            background: rgba(33, 150, 243, 0.1); border-radius: 15px; 
+            padding: 15px; margin-bottom: 20px; text-align: center;
+        }
+        .example-section h4 { color: #1976d2; margin-bottom: 10px; font-size: 15px; }
+        .example-code { 
+            background: white; padding: 12px; border-radius: 8px; 
+            font-family: 'SF Mono', 'Monaco', 'Roboto Mono', monospace; 
+            font-size: 16px; font-weight: bold; letter-spacing: 1px; 
+            border: 2px solid #2196F3; color: #2196F3;
+        }
+        
+        .camera-section h3 { 
+            margin-bottom: 15px; color: #333; font-size: 18px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .camera-container { 
+            background: #000; border-radius: 15px; aspect-ratio: 4/3; 
+            position: relative; overflow: hidden; margin-bottom: 15px;
+            display: none; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .camera-container.active { display: block; }
+        
+        video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border: 3px dashed #2196F3; width: 85%; height: 40%; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(33, 150, 243, 0.15); backdrop-filter: blur(3px);
+            transition: all 0.3s ease;
+        }
+        
+        .overlay.scanning {
+            border-color: #FF9800; box-shadow: 0 0 20px rgba(255, 152, 0, 0.6);
+            animation: scanPulse 1.5s infinite;
+        }
+        
+        .overlay.found {
+            border-color: #4CAF50; box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .overlay-text { 
+            background: rgba(33, 150, 243, 0.9); color: white; 
+            padding: 10px 15px; border-radius: 10px; font-size: 13px; 
+            font-weight: 600; text-align: center; z-index: 5;
+            transition: all 0.3s ease;
+        }
+        
+        .overlay.scanning .overlay-text {
+            background: rgba(255, 152, 0, 0.9);
+        }
+        
+        .overlay.found .overlay-text {
+            background: rgba(76, 175, 80, 0.9);
+        }
+        
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 12px; 
+            font-size: 16px; font-weight: 600; cursor: pointer; 
+            margin-bottom: 10px; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { 
+            background: linear-gradient(45deg, #2196F3, #21CBF3); 
+            color: white; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+        .btn-danger { 
+            background: linear-gradient(45deg, #FF5722, #FF7043); 
+            color: white; box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+        }
+        .btn-secondary { 
+            background: rgba(255,255,255,0.8); color: #333; 
+            border: 2px solid #e1e5e9; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .btn:hover:not(:disabled) { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .btn:active { transform: translateY(0px); }
+        .btn.hidden { display: none; }
+        
+        .status {
+            background: rgba(255,255,255,0.9); border-radius: 10px; 
+            padding: 12px; margin: 10px 0; text-align: center; 
+            font-weight: 500; font-size: 14px; display: none;
+        }
+        .status.active { display: block; }
+        .status.scanning { background: rgba(255, 243, 205, 0.9); color: #856404; }
+        .status.success { background: rgba(212, 237, 218, 0.9); color: #155724; }
+        .status.error { background: rgba(248, 215, 218, 0.9); color: #721c24; }
+        
+        .auto-call {
+            background: linear-gradient(45deg, #FF5722, #FF7043); 
+            color: white; border-radius: 15px; padding: 18px; margin: 15px 0; 
+            text-align: center; display: none; animation: pulse 1.5s infinite;
+            box-shadow: 0 8px 25px rgba(255, 87, 34, 0.4);
+        }
+        .auto-call.active { display: block; }
+        .countdown { 
+            font-size: 28px; font-weight: bold; margin: 8px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .auto-call-text { font-size: 15px; margin-bottom: 5px; }
+        .auto-call-cancel { 
+            font-size: 11px; opacity: 0.8; margin-top: 8px; 
+            cursor: pointer; text-decoration: underline;
+        }
+        
+        .result { 
+            background: linear-gradient(135deg, #4CAF50, #45a049); 
+            color: white; border-radius: 18px; padding: 20px; text-align: center;
+            display: none; animation: slideUp 0.5s ease;
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4);
+        }
+        .result.active { display: block; }
+        .result h3 { 
+            margin-bottom: 15px; font-size: 18px; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .detected-code { 
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+            padding: 15px; border-radius: 12px; margin-bottom: 15px;
+            font-family: 'SF Mono', 'Monaco', 'Roboto Mono', monospace; 
+            font-size: 18px; font-weight: bold; letter-spacing: 2px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .quick-buttons {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .quick-buttons .btn { margin-bottom: 0; font-size: 14px; padding: 12px; }
+        
+        .footer { 
+            text-align: center; margin-top: 15px; padding: 10px; 
+            color: rgba(255,255,255,0.8); font-size: 12px;
+        }
+        .footer a { color: rgba(255,255,255,0.9); text-decoration: none; font-weight: 600; }
+        
+        .offline-indicator {
+            position: fixed; top: 10px; right: 10px;
+            background: #FF5722; color: white; padding: 6px 10px;
+            border-radius: 15px; font-size: 11px; font-weight: 600;
+            display: none; z-index: 1000;
+        }
+        .offline-indicator.show { display: block; }
+        
+        /* Animations */
+        @keyframes slideUp { 
+            from { transform: translateY(30px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+        @keyframes slideIn { 
+            from { transform: translateX(-100%); opacity: 0; } 
+            to { transform: translateX(0); opacity: 1; } 
+        }
+        @keyframes pulse { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.02); } 
+        }
+        @keyframes scanPulse { 
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 152, 0, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(255, 152, 0, 0.8); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .header { padding: 15px; }
+            .camera-card { padding: 15px; }
+            .detected-code { font-size: 16px; }
+        }
+        
+        /* PWA Hide browser UI */
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator">📵 Hors Ligne</div>
+    
+    <div class="app">
+        <!-- Install Prompt -->
+        <div id="installPrompt" class="install-prompt">
+            <div>📱 <strong>Installer Scanner</strong> pour un accès rapide !</div>
+            <button id="installBtn">✅ Installer</button>
+            <button id="dismissBtn">❌ Plus tard</button>
+        </div>
+        
+        <div class="header">
+            <h1>📷 Scanner Evatis</h1>
+            <p>Détection automatique des codes</p>
+        </div>
+
+        <div class="camera-card">
+            <!-- Exemple -->
+            <div class="example-section">
+                <h4>🎯 Scannez votre code de recharge</h4>
+                <div class="example-code">*166*990843980281#</div>
+            </div>
+
+            <!-- Scanner -->
+            <div class="camera-section">
+                <h3>📷 Scanner Automatique</h3>
+                
+                <div id="cameraContainer" class="camera-container">
+                    <video id="video" autoplay playsinline muted></video>
+                    <div id="overlay" class="overlay">
+                        <div id="overlayText" class="overlay-text">
+                            Positionnez les 12 chiffres dans le cadre
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="status" class="status"></div>
+                
+                <button id="startScanBtn" class="btn btn-primary">
+                    📷 Démarrer Scanner
+                </button>
+                
+                <button id="stopScanBtn" class="btn btn-danger hidden">
+                    ⏹️ Arrêter Scanner
+                </button>
+            </div>
+        </div>
+
+        <!-- Auto-call notification -->
+        <div id="autoCall" class="auto-call">
+            <div class="auto-call-text">🚀 Recharge automatique dans</div>
+            <div id="countdown" class="countdown">3</div>
+            <div class="auto-call-cancel">Tapez pour annuler</div>
+        </div>
+
+        <!-- Résultat -->
+        <div id="result" class="result">
+            <h3>✅ Code Détecté !</h3>
+            <div id="detectedCode" class="detected-code"></div>
+            <div class="quick-buttons">
+                <button id="confirmBtn" class="btn btn-primary">
+                    📞 Recharger
+                </button>
+                <button id="copyBtn" class="btn btn-secondary">
+                    📋 Copier
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Création d'<a href="https://opentek.co/" target="_blank">Opentek</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let stream = null;
+        let cameraActive = false;
+        let scanInterval = null;
+        let detectedCode = '';
+        let deferredPrompt = null;
+
+        // Éléments DOM
+        const elements = {
+            installPrompt: document.getElementById('installPrompt'),
+            installBtn: document.getElementById('installBtn'),
+            dismissBtn: document.getElementById('dismissBtn'),
+            cameraContainer: document.getElementById('cameraContainer'),
+            video: document.getElementById('video'),
+            overlay: document.getElementById('overlay'),
+            overlayText: document.getElementById('overlayText'),
+            startScanBtn: document.getElementById('startScanBtn'),
+            stopScanBtn: document.getElementById('stopScanBtn'),
+            status: document.getElementById('status'),
+            autoCall: document.getElementById('autoCall'),
+            countdown: document.getElementById('countdown'),
+            result: document.getElementById('result'),
+            detectedCode: document.getElementById('detectedCode'),
+            confirmBtn: document.getElementById('confirmBtn'),
+            copyBtn: document.getElementById('copyBtn'),
+            offlineIndicator: document.getElementById('offlineIndicator')
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePWA();
+            attachEventListeners();
+            console.log('📷 Scanner Evatis PWA initialisé');
+        });
+
+        // PWA Installation
+        function initializePWA() {
+            // Service Worker
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'evatis-scanner-v1.0';
+                    const ASSETS = ['./', './index.html'];
+                    
+                    self.addEventListener('install', event => {
+                        console.log('📦 Scanner PWA Installing...');
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(ASSETS))
+                                .catch(() => console.log('Cache offline'))
+                        );
+                        self.skipWaiting();
+                    });
+                    
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => response || fetch(event.request))
+                                .catch(() => {
+                                    if (event.request.mode === 'navigate') {
+                                        return caches.match('./index.html');
+                                    }
+                                    return new Response('Scanner disponible hors ligne', { 
+                                        status: 503,
+                                        headers: { 'Content-Type': 'text/plain' }
+                                    });
+                                })
+                        );
+                    });
+                    
+                    self.addEventListener('activate', event => {
+                        console.log('✅ Scanner PWA Activated');
+                        event.waitUntil(clients.claim());
+                    });
+                `;
+                
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('✅ Scanner PWA installé'))
+                    .catch(err => console.log('❌ Scanner PWA erreur:', err));
+            }
+
+            // Install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                elements.installPrompt.classList.add('show');
+            });
+
+            // Offline detection
+            window.addEventListener('online', () => {
+                elements.offlineIndicator.classList.remove('show');
+            });
+            
+            window.addEventListener('offline', () => {
+                elements.offlineIndicator.classList.add('show');
+            });
+            
+            if (!navigator.onLine) {
+                elements.offlineIndicator.classList.add('show');
+            }
+        }
+
+        async function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const result = await deferredPrompt.userChoice;
+                if (result.outcome === 'accepted') {
+                    console.log('✅ Scanner installé');
+                }
+                deferredPrompt = null;
+                elements.installPrompt.classList.remove('show');
+            }
+        }
+
+        function dismissInstall() {
+            elements.installPrompt.classList.remove('show');
+        }
+
+        // CAMÉRA ET SCANNER
+        async function startCamera() {
+            try {
+                showStatus('🚀 Démarrage caméra...', 'scanning');
+                
+                const constraints = {
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                elements.video.srcObject = stream;
+                
+                cameraActive = true;
+                elements.cameraContainer.classList.add('active');
+                elements.startScanBtn.classList.add('hidden');
+                elements.stopScanBtn.classList.remove('hidden');
+                
+                // Démarrer scan automatique
+                startScanning();
+                
+                showStatus('✅ Scanner actif - Positionnez votre carte', 'success');
+                vibrate(50);
+                
+            } catch (error) {
+                console.error('❌ Erreur caméra:', error);
+                showStatus('❌ Impossible d\'accéder à la caméra', 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            
+            cameraActive = false;
+            elements.cameraContainer.classList.remove('active');
+            elements.startScanBtn.classList.remove('hidden');
+            elements.stopScanBtn.classList.add('hidden');
+            elements.overlay.className = 'overlay';
+            
+            showStatus('⏹️ Scanner arrêté', 'scanning');
+        }
+
+        function startScanning() {
+            elements.overlay.className = 'overlay scanning';
+            elements.overlayText.textContent = '🔍 Recherche de code...';
+            showStatus('🤖 Scanning en cours...', 'scanning', 0);
+            
+            // Scanner toutes les 2.5 secondes
+            scanInterval = setInterval(() => {
+                if (cameraActive) {
+                    scanFrame();
+                }
+            }, 2500);
+        }
+
+        async function scanFrame() {
+            try {
+                // Capturer frame
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = elements.video.videoWidth || 640;
+                canvas.height = elements.video.videoHeight || 480;
+                
+                ctx.drawImage(elements.video, 0, 0);
+                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                console.log('📸 Scanning frame...');
+                
+                // OCR avec API simple
+                const response = await fetch('https://api.ocr.space/parse/image', {
+                    method: 'POST',
+                    headers: { 'apikey': 'K87899142388957' },
+                    body: (() => {
+                        const formData = new FormData();
+                        formData.append('base64Image', imageData);
+                        formData.append('language', 'eng');
+                        formData.append('isOverlayRequired', 'false');
+                        return formData;
+                    })()
+                });
+
+                const result = await response.json();
+                if (result.ParsedResults && result.ParsedResults[0]) {
+                    const text = result.ParsedResults[0].ParsedText || '';
+                    const numbers = text.replace(/\D/g, '');
+                    
+                    console.log('🔍 Texte:', text);
+                    console.log('🔢 Chiffres:', numbers);
+                    
+                    if (numbers.length >= 12) {
+                        const code = numbers.substring(0, 12);
+                        
+                        // Animation succès
+                        elements.overlay.className = 'overlay found';
+                        elements.overlayText.textContent = '✅ Code détecté !';
+                        
+                        // Arrêter scanner
+                        stopCamera();
+                        
+                        // Déclencher recharge
+                        detectedCode = code;
+                        triggerAutoRecharge();
+                        
+                        vibrate([100, 50, 100, 50, 200]);
+                        
+                    } else if (numbers.length > 0) {
+                        elements.overlayText.textContent = `🔍 ${numbers.length}/12 chiffres détectés...`;
+                    }
+                }
+                
+            } catch (error) {
+                console.log('❌ Erreur scan:', error);
+            }
+        }
+
+        // RECHARGE AUTOMATIQUE
+        function triggerAutoRecharge() {
+            showResult();
+            elements.autoCall.classList.add('active');
+            let timeLeft = 3;
+            
+            const countdownInterval = setInterval(() => {
+                elements.countdown.textContent = timeLeft;
+                timeLeft--;
+                
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    elements.autoCall.classList.remove('active');
+                    executeRecharge();
+                }
+            }, 1000);
+            
+            // Annuler en tapant
+            elements.autoCall.onclick = () => {
+                clearInterval(countdownInterval);
+                elements.autoCall.classList.remove('active');
+                vibrate(50);
+            };
+        }
+
+        function executeRecharge() {
+            if (!detectedCode || detectedCode.length !== 12) {
+                showStatus('❌ Code invalide', 'error');
+                return;
+            }
+            
+            // Appel USSD avec # encodé
+            const phoneNumber = `*166*${detectedCode}%23`;
+            console.log('📞 Recharge USSD:', phoneNumber);
+            
+            try {
+                window.location.href = `tel:${phoneNumber}`;
+                vibrate([100, 50, 100]);
+                showStatus('📞 Ouverture téléphone...', 'success');
+            } catch (error) {
+                console.error('Erreur recharge:', error);
+                showStatus('❌ Impossible d\'ouvrir le téléphone', 'error');
+            }
+        }
+
+        function showResult() {
+            elements.detectedCode.textContent = `*166*${detectedCode}#`;
+            elements.result.classList.add('active');
+        }
+
+        async function copyCode() {
+            try {
+                const fullCode = `*166*${detectedCode}#`;
+                await navigator.clipboard.writeText(fullCode);
+                elements.copyBtn.textContent = '✅ Copié!';
+                setTimeout(() => {
+                    elements.copyBtn.textContent = '📋 Copier';
+                }, 2000);
+                vibrate(30);
+            } catch (error) {
+                console.error('Erreur copie:', error);
+            }
+        }
+
+        function showStatus(message, type = 'scanning', duration = 3000) {
+            elements.status.textContent = message;
+            elements.status.className = `status active ${type}`;
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    elements.status.classList.remove('active');
+                }, duration);
+            }
+        }
+
+        function vibrate(pattern) {
+            if (navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
+        // Event Listeners
+        function attachEventListeners() {
+            elements.installBtn.onclick = installPWA;
+            elements.dismissBtn.onclick = dismissInstall;
+            elements.startScanBtn.onclick = startCamera;
+            elements.stopScanBtn.onclick = stopCamera;
+            elements.confirmBtn.onclick = executeRecharge;
+            elements.copyBtn.onclick = copyCode;
+        }
+
+        // Nettoyage
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
